@@ -115,6 +115,100 @@ irodori_tts_lite.patch()
 
 ### 1. インストール
 
+Helianthus / ROS 2 workspace では、ROS 2 の Python 環境とは独立した uv
+環境をこのディレクトリ直下に作る運用を推奨します。
+
+```bash
+cd src/tts/irodori_tts_lite
+./setup.sh
+```
+
+`setup.sh` は以下をすべて `irodori_tts_lite/` 直下に作成します。
+
+- `.venv/`: TTS 専用 uv virtualenv
+- `vendor/Irodori-TTS/`: 上流 TTS パイプラインの checkout
+- `.cache/`: uv / pip / Hugging Face / torch / triton などの runtime cache
+- `models/`: ローカルモデル配置用ディレクトリ
+
+実行時も同じ閉じた環境を使う場合:
+
+```bash
+source env.sh
+.venv/bin/python example/run_tts.py \
+    --text "こんにちは、メラだよ。テスト中なの！" \
+    --output-wav /tmp/sample.wav \
+    --no-ref
+```
+
+初回セットアップ時に既定の int4 checkpoint まで事前取得する場合:
+
+```bash
+./setup.sh --download-models
+```
+
+### バックエンドサーバー
+
+ROS 2 / GUI とは別プロセスの HTTP backend として起動できます。
+
+```bash
+source env.sh
+./run_backend_server.sh --host 127.0.0.1 --port 8766
+```
+
+起動モデルや用途別のモデル割り当ては `config.yaml` で変更できます。
+
+```yaml
+defaults:
+  model: irodori_lite_int4
+
+models:
+  irodori_lite_int4:
+    checkpoint: ""
+    no_ref: true
+  irodori_500m_v3_int4:
+    checkpoint: hf://kizuna-intelligence/Irodori-TTS-500M-v3-int4/model.safetensors
+    no_ref: true
+
+sources:
+  route_guidance:
+    model: irodori_lite_int4
+  slm:
+    model: irodori_lite_int4
+```
+
+別設定で起動する場合:
+
+```bash
+./run_backend_server.sh --config config.yaml
+```
+
+API リクエストに `"model": "irodori_500m_v3_int4"` を含めると、そのリクエストだけモデルを上書きできます。
+
+主な API:
+
+- `POST /api/synthesize`: 任意テキストを TTS。将来の呼び出し元共通口。
+- `POST /api/route_guidance`: OSRM / phone route guidance JSON から読み上げ文を作って TTS。
+- `POST /api/slm_text`: 将来の SLM 出力テキスト用。内部的には `/api/synthesize` と同じ。
+- `GET /audio/<file>.wav`: 生成済み音声を取得。
+
+ルート案内の dry-run 例:
+
+```bash
+curl -s http://127.0.0.1:8766/api/route_guidance \
+  -H 'Content-Type: application/json' \
+  -d '{"dry_run":true,"step":{"text":"県道12号へ右折","distance_m":120}}'
+```
+
+TTS 実行例:
+
+```bash
+curl -s http://127.0.0.1:8766/api/synthesize \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"約120メートル先、県道12号へ右折。","source":"route_guidance"}'
+```
+
+従来の pip install を使う場合:
+
 ```bash
 pip install git+https://github.com/kizuna-intelligence/Irodori-TTS-Lite.git
 pip install pyopenjtalk            # run_tts.py でテキスト → 秒数の自動推定に使用

@@ -1,0 +1,33 @@
+server:
+  host: 127.0.0.1
+  port: 8766
+  audio_dir: runtime/audio
+  timeout_sec: 240
+
+runtime:
+  python: .venv/bin/python
+
+defaults:
+  model: irodori_lite_int4
+  no_ref: true
+  extra_args: []
+
+models:
+  irodori_lite_int4:
+    checkpoint: ""
+    no_ref: true
+    no_fused: false
+    no_fp16: false
+    extra_args: []
+  irodori_500m_v3_int4:
+    checkpoint: hf://kizuna-intelligence/Irodori-TTS-500M-v3-int4/model.safetensors
+    no_ref: true
+    no_fused: false
+    no_fp16: false
+    extra_args: []
+
+sources:
+  route_guidance:
+    model: irodori_lite_int4
+  slm:
+    model: irodori_lite_int4

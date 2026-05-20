@@ -2,6 +2,10 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+.cache/
+vendor/
+models/
+runtime/
 build/
 dist/
 .idea/
