@@ -12,7 +12,12 @@ from __future__ import annotations
 
 import argparse
 import os
+from pathlib import Path
 import sys
+
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+UPSTREAM_DIR = ROOT_DIR / "vendor" / "Irodori-TTS"
 
 
 def main() -> int:
@@ -60,6 +65,8 @@ def main() -> int:
 
     # Defer infer import until after the runtime is patched so it picks up
     # our hooks the first time it constructs an InferenceRuntime.
+    if UPSTREAM_DIR.is_dir():
+        sys.path.insert(0, str(UPSTREAM_DIR))
     import infer
     infer.FIXED_SECONDS = float(args.seconds)
 
