@@ -10,7 +10,9 @@ runtime:
 defaults:
   model: irodori_lite_int4
   no_ref: true
-  extra_args: []
+  extra_args:
+    - --num-steps
+    - "30"
 
 models:
   irodori_lite_int4:
